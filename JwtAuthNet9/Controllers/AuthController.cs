@@ -36,10 +36,18 @@ namespace JwtAuthNet9.Controllers
 
         // This endpoint is protected and requires authentication
         [Authorize]
-        [HttpGet("TestOnlyEndpoint")]
+        [HttpGet("test-only-endpoint-authorize")]
         public IActionResult AuthenticatedOnlyEndpoint()
         {
             return Ok("You are authenticated!");
+        }
+
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("test-only-endpoint-role-admin")]
+        public IActionResult AuthenticatedOnlyRoleAdmin()
+        {
+            return Ok("You are the admin!");
         }
     }
 }
