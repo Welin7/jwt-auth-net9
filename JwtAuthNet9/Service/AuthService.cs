@@ -1,5 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using JwtAuthNet9.Data;
 using JwtAuthNet9.Dtos;
@@ -12,7 +13,7 @@ namespace JwtAuthNet9.Service
 {
     public class AuthService(ApplicationDbContext context, IConfiguration configuration) : IAuthService
     {
-        public async Task<string?> LoginAsync(UserDto userDto)
+        public async Task<TokenResponseDto?> LoginAsync(UserDto userDto)
         {
             var user = await context.Users.FirstOrDefaultAsync(x => x.UserName == userDto.UserName);   
 
@@ -27,7 +28,12 @@ namespace JwtAuthNet9.Service
                 return null;
             }
             
-            return CreateToken(user);
+            var response = new TokenResponseDto
+            {
+                AccessToken = CreateToken(user),
+                RefreshToken = await GenerateAndSaveRefreshTokenAsync(user)
+            };
+            return response;
         }
 
         public async Task<User?> RegisterAsync(UserDto userDto)
@@ -48,6 +54,25 @@ namespace JwtAuthNet9.Service
             context.Users.Add(user);
             await context.SaveChangesAsync();
             return user;
+        }
+        
+        private string GenerateRefreshToken()
+        {
+            var randomNumber = new byte[32];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(randomNumber);
+                return Convert.ToBase64String(randomNumber);
+            }
+        }
+
+        private async Task<string> GenerateAndSaveRefreshTokenAsync(User user)
+        {
+            var refreshToken = GenerateRefreshToken();
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);            
+            await context.SaveChangesAsync();
+            return refreshToken;
         }
 
         private string CreateToken(User user)
