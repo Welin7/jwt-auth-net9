@@ -23,15 +23,15 @@ namespace JwtAuthNet9.Controllers
         }
 
         [HttpPost("login")]
-        public async Task <ActionResult<string>> Login([FromBody] UserDto userDto)
+        public async Task <ActionResult<TokenResponseDto>> Login([FromBody] UserDto userDto)
         {
-            var token = await authService.LoginAsync(userDto);
-            if (token is null)
+            var resultResponse = await authService.LoginAsync(userDto);
+            if (resultResponse is null)
             {
                 return BadRequest("Invalid username or password");
             }
 
-            return Ok(token);
+            return Ok(resultResponse);
         }
 
         // This endpoint is protected and requires authentication
