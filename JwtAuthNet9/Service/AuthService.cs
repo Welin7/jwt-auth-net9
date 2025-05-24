@@ -15,7 +15,7 @@ namespace JwtAuthNet9.Service
     {
         public async Task<TokenResponseDto?> LoginAsync(UserDto userDto)
         {
-            var user = await context.Users.FirstOrDefaultAsync(x => x.UserName == userDto.UserName);   
+            var user = await context.Users.FirstOrDefaultAsync(x => x.UserName == userDto.UserName);
 
             if (user is null)
             {
@@ -28,12 +28,16 @@ namespace JwtAuthNet9.Service
                 return null;
             }
             
-            var response = new TokenResponseDto
+            return await CreateTokenResponse(user);
+        }
+
+        private async Task<TokenResponseDto> CreateTokenResponse(User user)
+        {
+            return new TokenResponseDto
             {
                 AccessToken = CreateToken(user),
                 RefreshToken = await GenerateAndSaveRefreshTokenAsync(user)
             };
-            return response;
         }
 
         public async Task<User?> RegisterAsync(UserDto userDto)
@@ -55,7 +59,28 @@ namespace JwtAuthNet9.Service
             await context.SaveChangesAsync();
             return user;
         }
-        
+
+        public async Task<TokenResponseDto?> RefreshTokenAsync(RefreshTokenRequestDto refreshTokenRequestDto)
+        {
+            var user = await ValidateRefreshTokenAsync(refreshTokenRequestDto.UserId, refreshTokenRequestDto.RefreshToken);
+            if (user == null)
+            {
+                return null;
+            }
+
+            return await CreateTokenResponse(user);
+        }
+
+        private async Task<User?> ValidateRefreshTokenAsync(Guid userId, string refreshToken)
+        {
+            var user = await context.Users.FindAsync(userId);
+            if (user is null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+            {
+                return null;
+            }
+            return user;
+        }
+
         private string GenerateRefreshToken()
         {
             var randomNumber = new byte[32];
