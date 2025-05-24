@@ -34,6 +34,18 @@ namespace JwtAuthNet9.Controllers
             return Ok(resultResponse);
         }
 
+        [HttpPost("refresh-token")]
+        public async Task<ActionResult<TokenResponseDto>> RefreshToken([FromBody] RefreshTokenRequestDto refreshTokenRequestDto)
+        {
+            var result = await authService.RefreshTokenAsync(refreshTokenRequestDto);
+            if (result is null || result.AccessToken is null || result.RefreshToken is null)
+            {
+                return Unauthorized("Invalid refresh token");
+            }
+
+            return Ok(result);
+        }
+
         // This endpoint is protected and requires authentication
         [Authorize]
         [HttpGet("test-only-endpoint-authorize")]
