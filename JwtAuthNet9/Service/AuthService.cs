@@ -1,18 +1,20 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using JwtAuthNet9.Data;
+﻿using JwtAuthNet9.Data;
 using JwtAuthNet9.Dtos;
 using JwtAuthNet9.Entities;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace JwtAuthNet9.Service
 {
-    public class AuthService(ApplicationDbContext context, IConfiguration configuration) : IAuthService
+    public class AuthService(ApplicationDbContext context, IConfiguration configuration, IHttpContextAccessor httpContextAccessor) : IAuthService
     {
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         public async Task<TokenResponseDto?> LoginAsync(UserDto userDto)
         {
             var user = await context.Users.FirstOrDefaultAsync(x => x.UserName == userDto.UserName);
@@ -123,6 +125,38 @@ namespace JwtAuthNet9.Service
             );
 
             return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
+        }
+
+        public Task WriteAuthTokenAsHttpOnlyCookie(string accessToken, string refreshToken)
+        {
+            var response = _httpContextAccessor.HttpContext?.Response;
+            if (response == null)
+            {
+                return Task.CompletedTask;
+            }
+
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddDays(1)
+            };
+
+            response.Cookies.Append("access_token", accessToken, cookieOptions);
+
+            var refreshTokenOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddDays(7)
+            };
+
+            response.Cookies.Append("refresh_token", refreshToken, refreshTokenOptions);
+
+            return Task.CompletedTask;
         }
     }
 }

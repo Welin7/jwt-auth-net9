@@ -8,5 +8,6 @@ namespace JwtAuthNet9.Service
         Task<User?> RegisterAsync(UserDto userDto);
         Task<TokenResponseDto?> LoginAsync(UserDto userDto);
         Task<TokenResponseDto?> RefreshTokenAsync(RefreshTokenRequestDto refreshTokenRequestDto);
+        Task WriteAuthTokenAsHttpOnlyCookie(string accessToken, string refreshToken);
     }
 }
