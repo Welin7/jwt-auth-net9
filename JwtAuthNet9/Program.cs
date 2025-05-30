@@ -1,10 +1,11 @@
-using System.Text;
 using JwtAuthNet9.Data;
+using JwtAuthNet9.MiddlewareValidateToken;
 using JwtAuthNet9.Service;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +45,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
@@ -59,6 +61,7 @@ app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");
 
+app.UseMiddleware<JwtFromCookieMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
